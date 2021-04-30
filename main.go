@@ -91,30 +91,40 @@ func installDep(OSType int8) error {
 }
 
 func updateRepo() error {
+	downDir, err := os.ReadDir("./download")
+	if err != nil {
+		return err
+	}
+	repreproArgs := []string{"-C", "main", "-b", "./deb", "includedeb", "nini"}
+	for i := range downDir {
+		fName := downDir[i].Name()
+		if !downDir[i].IsDir() {
+			if strings.HasSuffix(fName, ".rpm") {
+				err = os.Rename("./download/"+fName, "./rpm/dist/"+fName)
+				if err != nil {
+					return err
+				}
+				continue
+			}
+			if strings.HasSuffix(fName, ".deb") {
+				repreproArgs = append(repreproArgs, "./download/"+fName)
+				continue
+			}
+		}
+	}
+
 	log.Println("正在更新APT仓库...")
 	log.Println("Running reprepro -C main -b ./deb includedeb nini ./download/*.deb")
-	c := exec.Command("reprepro", "-C", "main", "-b", "./deb", "includedeb", "nini", "./download/*.deb")
+	c := exec.Command("reprepro", repreproArgs...)
 	c.Stderr = os.Stderr
-	err := c.Run()
+	err = c.Run()
 	if err != nil {
 		return err
 	}
 	log.Println("APT仓库更新完成")
 
 	log.Println("正在更新RPM仓库...")
-	downDir, err := os.ReadDir("./download")
-	if err != nil {
-		return err
-	}
-	for i := range downDir {
-		fName := downDir[i].Name()
-		if strings.HasSuffix(fName, ".rpm") && !downDir[i].IsDir() {
-			err = os.Rename("./download/"+fName, "./rpm/dist/"+fName)
-			if err != nil {
-				return err
-			}
-		}
-	}
+
 	c = exec.Command("createrepo", "--update", "./rpm/dist")
 	c.Stderr = os.Stderr
 	err = c.Run()
