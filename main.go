@@ -79,7 +79,7 @@ func installDep(OSType int8) error {
 		pm = "dnf"
 	}
 	log.Println("正在安装仓库构建工具...")
-	log.Println("Running sudo dnf install reprepro createrepo -y")
+	log.Printf("Running sudo %s install reprepro createrepo -y\n", pm)
 	c := exec.Command("sudo", pm, "install", "reprepro", "createrepo", "-y")
 	c.Stderr = os.Stderr
 	err := c.Run()
